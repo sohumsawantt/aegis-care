@@ -1,0 +1,14 @@
+# AEGIS-Care runtime dependencies.
+fastapi>=0.110
+uvicorn[standard]>=0.29
+pydantic>=2.6
+numpy>=1.26
+scikit-learn>=1.4
+pandas>=2.2
+matplotlib>=3.8
+cryptography>=42.0
+httpx>=0.27
+jinja2>=3.1
+
+# Development / evaluation
+pytest>=8.0

@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AEGIS-Care · Memory Recompiler</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+<header>
+  <div class="brand">
+    <h1>AEGIS<span>-CARE</span></h1>
+    <span class="tag">Privacy-bounded memory recompiler for poisoned clinical AI agents</span>
+    <span class="ver" id="version">v…</span>
+  </div>
+  <div class="disclaimer">
+    Simulated FHIR sandbox with synthetic records. No diagnosis, treatment, medication
+    execution, or real EHR use. Not a compliance-certified system.
+  </div>
+  <nav class="tabs" id="tabs">
+    <button data-view="overview" class="active">Overview</button>
+    <button data-view="incident">Incident Lab</button>
+    <button data-view="care">CARE Recovery</button>
+    <button data-view="graph">Memory Graph</button>
+    <button data-view="baselines">Baselines</button>
+    <button data-view="privacy">Privacy Audit</button>
+    <button data-view="review">Review Queue</button>
+    <button data-view="experiment">Experiments</button>
+    <button data-view="audit">Audit Log</button>
+  </nav>
+</header>
+
+<main>
+  <!-- ============ OVERVIEW ============ -->
+  <section class="view active" id="view-overview">
+    <div class="grid four" id="overview-stats"></div>
+    <div class="spacer"></div>
+    <div class="grid two">
+      <div class="panel">
+        <h2>The problem</h2>
+        <p class="hint">When one clinical AI memory is found to be wrong, can the system
+          discover, repair, and verify everything that inherited the error without opening
+          every patient record?</p>
+        <p class="small muted">A record assistant may store an incorrect patient
+          association, summarize it into later memory, and reuse the derived state after the
+          original source is corrected. Deleting the visible seed leaves authentic-looking
+          handovers, summaries, and retrieval cues active. A full reset removes the error but
+          destroys useful memory. Central forensic reconstruction recovers accurately but
+          requires reading patient content the investigator is not authorized to see.</p>
+        <h3>The CARE loop</h3>
+        <div class="stages">
+          <div class="stage"><div class="letter">C</div><div class="name">Candidate discovery</div>
+            <div class="desc">Exact lineage plus receiver-scoped latent sketches produce a
+              <em>ranked candidate set only</em>.</div></div>
+          <div class="stage"><div class="letter">A</div><div class="name">Attribution</div>
+            <div class="desc">Local counterfactual replay confirms whether the candidate
+              actually inherited the error.</div></div>
+          <div class="stage"><div class="letter">R</div><div class="name">Recompilation</div>
+            <div class="desc">Confirmed descendants are rebuilt from trusted FHIR sources, or
+              quarantined. Never guessed.</div></div>
+          <div class="stage"><div class="letter">E</div><div class="name">Enforcement</div>
+            <div class="desc">Tombstones and a resurrection firewall stop withdrawn influence
+              from returning.</div></div>
+        </div>
+      </div>
+      <div class="panel">
+        <h2>Role separation</h2>
+        <p class="hint">Raw patient content never leaves the runtime authorized to process it.</p>
+        <div id="roles-table"></div>
+        <h3>Contamination families</h3>
+        <div id="families-table"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ INCIDENT LAB ============ -->
+  <section class="view" id="view-incident">
+    <div class="panel">
+      <h2>Construct an incident</h2>
+      <p class="hint">Plant a seed, propagate it through the role-separated derivation chain,
+        then mask provenance edges to create the incomplete-lineage condition under study.</p>
+      <div class="controls">
+        <div class="field"><label>Family</label><select id="in-family"></select></div>
+        <div class="field"><label>Task</label><select id="in-task"></select></div>
+        <div class="field"><label>Propagation depth</label>
+          <select id="in-depth">
+            <option value="1">1 hop</option><option value="2">2 hops</option>
+            <option value="3">3 hops</option><option value="4" selected>4 hops</option>
+          </select></div>
+        <div class="field"><label>Provenance</label><select id="in-prov"></select></div>
+        <div class="field"><label>Clean controls</label>
+          <input type="number" id="in-controls" value="1" min="0" max="3"></div>
+        <button class="btn" id="btn-create">Create incident</button>
+        <button class="btn ghost" id="btn-reset">Reset system</button>
+      </div>
+      <div id="incident-result"></div>
+    </div>
+    <div class="spacer"></div>
+    <div class="panel">
+      <h2>Existing incidents</h2>
+      <div class="table-wrap" id="incident-list"></div>
+    </div>
+  </section>
+
+  <!-- ============ CARE ============ -->
+  <section class="view" id="view-care">
+    <div class="panel">
+      <h2>Run the CARE loop</h2>
+      <p class="hint">Each toggle is one of the critical ablations from the evaluation plan.
+        Turning a stage off is how the study shows the stage is load-bearing.</p>
+      <div class="controls">
+        <div class="field"><label>Incident</label><select id="care-incident"></select></div>
+        <button class="btn" id="btn-recover">Run recovery</button>
+      </div>
+      <div class="toggles" id="care-toggles">
+        <label class="toggle"><input type="checkbox" id="opt-sketch" checked> Latent sketch discovery</label>
+        <label class="toggle"><input type="checkbox" id="opt-lineage" checked> Explicit lineage</label>
+        <label class="toggle"><input type="checkbox" id="opt-counterfactual" checked> Counterfactual replay</label>
+        <label class="toggle"><input type="checkbox" id="opt-recompile" checked> Recompilation</label>
+        <label class="toggle"><input type="checkbox" id="opt-enforce" checked> Resurrection firewall</label>
+        <label class="toggle"><input type="checkbox" id="opt-scope" checked> Purpose/recipient scoping</label>
+      </div>
+      <div id="care-result"></div>
+    </div>
+  </section>
+
+  <!-- ============ GRAPH ============ -->
+  <section class="view" id="view-graph">
+    <div class="panel">
+      <h2>Versioned memory graph</h2>
+      <p class="hint">Solid edges are lineage the operational system can observe. Dashed edges
+        exist in the private ground-truth graph but were removed by provenance masking —
+        these are the edges latent discovery must recover.</p>
+      <div class="controls">
+        <button class="btn ghost small" id="btn-graph-refresh">Refresh</button>
+      </div>
+      <svg id="graph-svg"></svg>
+      <div class="legend">
+        <div class="item"><span class="swatch" style="background:#1c2532;border-color:#3fb950"></span> active / repaired</div>
+        <div class="item"><span class="swatch" style="background:rgba(248,81,73,.3);border-color:#f85149"></span> suspected</div>
+        <div class="item"><span class="swatch" style="background:rgba(210,153,34,.3);border-color:#d29922"></span> quarantined</div>
+        <div class="item"><span class="swatch" style="background:#1c2532;border-color:#6e7681"></span> superseded / tombstoned</div>
+        <div class="item">— observed edge</div>
+        <div class="item">- - masked edge (ground truth only)</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ BASELINES ============ -->
+  <section class="view" id="view-baselines">
+    <div class="panel">
+      <h2>Baseline comparison</h2>
+      <p class="hint">All nine conditions run against the same frozen snapshot, the same seed,
+        the same provenance mask, and the same follow-up tasks.</p>
+      <div class="controls">
+        <div class="field"><label>Incident</label><select id="bl-incident"></select></div>
+        <button class="btn" id="btn-baselines">Run all conditions</button>
+      </div>
+      <div id="baseline-result"></div>
+    </div>
+  </section>
+
+  <!-- ============ PRIVACY ============ -->
+  <section class="view" id="view-privacy">
+    <div class="panel">
+      <h2>Empirical leakage measurement</h2>
+      <p class="hint">The system does <em>not</em> claim sketches are private by construction.
+        These are attacks run against our own recovery interface; advantage over the
+        majority-class baseline is what matters.</p>
+      <div class="controls">
+        <div class="field"><label>Incident</label><select id="pv-incident"></select></div>
+        <button class="btn" id="btn-privacy">Run privacy audit</button>
+      </div>
+      <div id="privacy-result"></div>
+    </div>
+  </section>
+
+  <!-- ============ REVIEW ============ -->
+  <section class="view" id="view-review">
+    <div class="panel">
+      <h2>Human review queue</h2>
+      <p class="hint">When reconstruction is uncertain the system quarantines and escalates
+        rather than guessing. A reviewer may approve, reject, or keep an item quarantined.</p>
+      <button class="btn ghost small" id="btn-review-refresh">Refresh queue</button>
+      <div id="review-result"></div>
+    </div>
+  </section>
+
+  <!-- ============ EXPERIMENT ============ -->
+  <section class="view" id="view-experiment">
+    <div class="panel">
+      <h2>Full experiment matrix</h2>
+      <p class="hint">Runs every family × depth × provenance condition × recovery condition on
+        paired frozen trajectories, then writes tables, figures, and the report to
+        <span class="mono">results/</span>.</p>
+      <div class="controls">
+        <div class="field"><label>Families</label><select id="ex-families" multiple size="4"></select></div>
+        <div class="field"><label>Depths</label><select id="ex-depths" multiple size="4">
+          <option value="1">1</option><option value="2" selected>2</option>
+          <option value="3" selected>3</option><option value="4" selected>4</option>
+        </select></div>
+        <div class="field"><label>Provenance</label><select id="ex-prov" multiple size="4"></select></div>
+        <div class="field"><label>Tasks / family</label>
+          <input type="number" id="ex-tasks" value="1" min="1" max="4"></div>
+        <button class="btn" id="btn-experiment">Run experiment</button>
+      </div>
+      <div id="experiment-result"></div>
+    </div>
+  </section>
+
+  <!-- ============ AUDIT ============ -->
+  <section class="view" id="view-audit">
+    <div class="panel">
+      <h2>Append-only audit log</h2>
+      <p class="hint">Superseded content is never destructively deleted; it becomes
+        non-servable and is represented by a policy-controlled tombstone.</p>
+      <button class="btn ghost small" id="btn-audit-refresh">Refresh</button>
+      <div class="spacer"></div>
+      <div class="log" id="audit-log"></div>
+    </div>
+  </section>
+</main>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
