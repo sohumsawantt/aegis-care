@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AEGIS-Care · Live Demonstration</title>
+  <link rel="stylesheet" href="/static/presentation.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- ===================== TOP BAR ===================== -->
+  <div id="topbar">
+    <div class="logo">AEGIS<span>-CARE</span></div>
+    <div class="scenario" id="scenario-chips"></div>
+    <div class="spacer"></div>
+    <button class="iconbtn" id="btn-setup">Scenario</button>
+    <button class="iconbtn" id="btn-notes">Speaker notes <kbd>N</kbd></button>
+    <button class="iconbtn" id="btn-restart">Restart</button>
+    <a class="iconbtn" href="/console" target="_blank" style="text-decoration:none">Analyst console</a>
+  </div>
+
+  <!-- ===================== PROGRESS RAIL ===================== -->
+  <div id="rail"></div>
+
+  <!-- ===================== STAGE ===================== -->
+  <div id="stage">
+
+    <!-- ---------- 0. INTRO ---------- -->
+    <section class="act active" data-act="intro">
+      <div class="act-head">
+        <div class="act-kicker">NMIMS MPSTME · B.Tech Computer Engineering Capstone</div>
+        <div class="act-title">AEGIS-Care</div>
+        <div class="act-sub">A privacy-bounded memory recompiler for recovering poisoned
+          clinical AI agents.</div>
+      </div>
+
+      <div class="hero-q">
+        When one clinical AI memory is found to be wrong, can the system
+        <em>discover, repair, and verify</em> everything that inherited the error —
+        <em>without opening every patient record</em>?
+      </div>
+
+      <div class="grid g3">
+        <div class="panel">
+          <h3>Delete the seed</h3>
+          <p class="small muted" style="margin:0">Removes the known bad entry. Derived
+            summaries, handovers, and retrieval cues stay active and keep being reused.</p>
+        </div>
+        <div class="panel">
+          <h3>Wipe all memory</h3>
+          <p class="small muted" style="margin:0">Safe, and it destroys every legitimate
+            thing the assistant learned. Persistence stops paying for itself.</p>
+        </div>
+        <div class="panel">
+          <h3>Central investigation</h3>
+          <p class="small muted" style="margin:0">Accurate, and it requires reading patient
+            content the investigator is not authorised to see.</p>
+        </div>
+      </div>
+
+      <div class="callout info mt">
+        <div class="icon">◆</div>
+        <div>This demonstration runs the <b>real system</b> live — a FHIR sandbox, three
+          role-separated agents, cryptographic capsules, and the CARE recovery loop.
+          Nothing on screen is pre-recorded.</div>
+      </div>
+
+      <div class="hero-meta mt">
+        <div><b>Scenario</b><span id="intro-family">—</span></div>
+        <div><b>Provenance</b><span id="intro-prov">—</span></div>
+        <div><b>Model</b><span id="intro-model">—</span></div>
+      </div>
+    </section>
+
+    <!-- ---------- 1. SYSTEM ---------- -->
+    <section class="act" data-act="system">
+      <div class="act-head">
+        <div class="act-kicker">Act 1</div>
+        <div class="act-title">The System</div>
+        <div class="act-sub">Three role-separated clinical agents over a FHIR R4 sandbox,
+          coordinated by a recovery service that holds no clinical read rights at all.</div>
+      </div>
+      <div id="system-body"><div class="callout info"><div class="icon">▸</div>
+        <div>Press <b>Load the sandbox</b> below.</div></div></div>
+    </section>
+
+    <!-- ---------- 2. CLEAN ---------- -->
+    <section class="act" data-act="clean">
+      <div class="act-head">
+        <div class="act-kicker">Act 2</div>
+        <div class="act-title">Normal Operation</div>
+        <div class="act-sub">A record-lookup task runs across all three roles. Each agent
+          writes a durable memory, and the next agent derives from it.</div>
+      </div>
+      <div id="clean-body"></div>
+    </section>
+
+    <!-- ---------- 3. POISON ---------- -->
+    <section class="act" data-act="poison">
+      <div class="act-head">
+        <div class="act-kicker">Act 3</div>
+        <div class="act-title">The Poisoning</div>
+        <div class="act-sub">One corrupted patient association is written into registration
+          memory. Watch it travel.</div>
+      </div>
+      <div id="poison-body"></div>
+    </section>
+
+    <!-- ---------- 4. DELETION ---------- -->
+    <section class="act" data-act="deletion">
+      <div class="act-head">
+        <div class="act-kicker">Act 4</div>
+        <div class="act-title">Why Deletion Fails</div>
+        <div class="act-sub">The obvious fix: find the bad entry and delete it. This is
+          baseline B, and it is the failure the whole project exists to address.</div>
+      </div>
+      <div id="deletion-body"></div>
+    </section>
+
+    <!-- ---------- 5. RESET ---------- -->
+    <section class="act" data-act="reset">
+      <div class="act-head">
+        <div class="act-kicker">Act 5</div>
+        <div class="act-title">Why Reset Is Worse</div>
+        <div class="act-sub">The safe fix: wipe every memory. Baseline C. It works, and
+          look at what it costs.</div>
+      </div>
+      <div id="reset-body"></div>
+    </section>
+
+    <!-- ---------- 6. CARE ---------- -->
+    <section class="act" data-act="care">
+      <div class="act-head">
+        <div class="act-kicker">Act 6</div>
+        <div class="act-title">The CARE Loop</div>
+        <div class="act-sub">Candidate discovery, attribution by counterfactual replay,
+          clean-room recompilation, and enforcement — running for real.</div>
+      </div>
+      <div id="care-body"></div>
+    </section>
+
+    <!-- ---------- 7. VERIFY ---------- -->
+    <section class="act" data-act="verify">
+      <div class="act-head">
+        <div class="act-kicker">Act 7</div>
+        <div class="act-title">Verification</div>
+        <div class="act-sub">What left each runtime, what came back, and whether the system
+          may safely return to service.</div>
+      </div>
+      <div id="verify-body"></div>
+    </section>
+
+    <!-- ---------- 8. COMPARE ---------- -->
+    <section class="act" data-act="compare">
+      <div class="act-head">
+        <div class="act-kicker">Act 8</div>
+        <div class="act-title">All Nine Conditions</div>
+        <div class="act-sub">Every recovery strategy, scored on the same frozen snapshot,
+          the same seed, the same provenance mask, and the same follow-up task.</div>
+      </div>
+      <div id="compare-body"></div>
+    </section>
+
+    <!-- ---------- 9. PRIVACY ---------- -->
+    <section class="act" data-act="privacy">
+      <div class="act-head">
+        <div class="act-kicker">Act 9</div>
+        <div class="act-title">What Leaks</div>
+        <div class="act-sub">The project refuses to call its sketches private by
+          construction. So it attacks its own recovery interface and reports the result.</div>
+      </div>
+      <div id="privacy-body"></div>
+    </section>
+
+    <!-- ---------- 10. CLOSE ---------- -->
+    <section class="act" data-act="close">
+      <div class="act-head">
+        <div class="act-kicker">Conclusion</div>
+        <div class="act-title">Contribution</div>
+        <div class="act-sub">A third option between hoping that deletion was enough and
+          wiping everything the agent learned.</div>
+      </div>
+      <div id="close-body"></div>
+    </section>
+
+  </div>
+
+  <!-- ===================== BOTTOM BAR ===================== -->
+  <div id="bottombar">
+    <button class="btn ghost" id="btn-prev">← Back</button>
+    <button class="btn big" id="btn-action">Begin</button>
+    <span class="hint" id="action-hint"></span>
+    <div class="spacer"></div>
+    <span class="hint"><kbd>←</kbd> <kbd>→</kbd> navigate · <kbd>Space</kbd> run · <kbd>N</kbd> notes</span>
+    <button class="btn ghost" id="btn-next">Next →</button>
+  </div>
+
+  <!-- ===================== SPEAKER NOTES ===================== -->
+  <div id="notes"><h4>Speaker notes</h4><div id="notes-body"></div></div>
+
+</div>
+
+<!-- ===================== SETUP DIALOG ===================== -->
+<dialog id="setup-dialog" style="background:#131a25;color:#eef4fb;border:1px solid #35455a;
+        border-radius:12px;padding:24px 26px;max-width:520px;font-family:inherit">
+  <h3 style="margin:0 0 6px;font-size:17px">Scenario setup</h3>
+  <p class="small muted" style="margin:0 0 18px">Pick the contamination family and how much
+    lineage to hide. Changing this restarts the demonstration.</p>
+  <div style="display:grid;gap:14px">
+    <label class="small">Contamination family
+      <select id="cfg-family" style="width:100%;margin-top:5px;padding:8px;background:#0e131c;
+        color:#eef4fb;border:1px solid #24303f;border-radius:7px"></select></label>
+    <label class="small">Task
+      <select id="cfg-task" style="width:100%;margin-top:5px;padding:8px;background:#0e131c;
+        color:#eef4fb;border:1px solid #24303f;border-radius:7px"></select></label>
+    <label class="small">Propagation depth
+      <select id="cfg-depth" style="width:100%;margin-top:5px;padding:8px;background:#0e131c;
+        color:#eef4fb;border:1px solid #24303f;border-radius:7px">
+        <option value="2">2 hops</option><option value="3">3 hops</option>
+        <option value="4" selected>4 hops</option></select></label>
+    <label class="small">Provenance condition
+      <select id="cfg-prov" style="width:100%;margin-top:5px;padding:8px;background:#0e131c;
+        color:#eef4fb;border:1px solid #24303f;border-radius:7px"></select></label>
+  </div>
+  <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px">
+    <button class="btn ghost" id="cfg-cancel">Cancel</button>
+    <button class="btn" id="cfg-apply">Apply and restart</button>
+  </div>
+</dialog>
+
+<script src="/static/presentation.js"></script>
+</body>
+</html>

@@ -347,10 +347,37 @@ def cmd_privacy(args) -> int:
 # ======================================================================
 def cmd_serve(args) -> int:
     import uvicorn
-    print(f"{BOLD}AEGIS-Care{RESET} dashboard {ARROW} {BLUE}http://{args.host}:{args.port}{RESET}")
-    uvicorn.run("aegis_care.api.app:app", host=args.host, port=args.port,
-                reload=args.reload, log_level="info")
+    host = args.host
+    shown = "127.0.0.1" if host == "0.0.0.0" else host
+    print()
+    rule("AEGIS-CARE")
+    print(f"  Presentation   {ARROW} {BLUE}http://{shown}:{args.port}/{RESET}")
+    print(f"  Analyst console{ARROW} {BLUE}http://{shown}:{args.port}/console{RESET}")
+    print(f"  API docs       {ARROW} {BLUE}http://{shown}:{args.port}/docs{RESET}")
+    print()
+    print(f"  {DIM}Press Ctrl+C to stop.{RESET}")
+    print()
+    if getattr(args, "open_browser", False):
+        import threading
+        import webbrowser
+
+        url = f"http://{shown}:{args.port}/"
+        threading.Timer(1.5, lambda: webbrowser.open(url)).start()
+    uvicorn.run("aegis_care.api.app:app", host=host, port=args.port,
+                reload=args.reload, log_level="warning")
     return 0
+
+
+def cmd_present(args) -> int:
+    """Launch straight into the guided presentation with the browser open."""
+    print()
+    rule("PRESENTATION MODE")
+    print(f"  {BOLD}Keyboard{RESET}: {ARROW} / {ARROW} navigate, Space runs the act, N toggles speaker notes.")
+    print(f"  {DIM}Every act calls the live system. Nothing is pre-recorded.{RESET}")
+    print(f"  {DIM}Use the Scenario button to switch contamination family or provenance.{RESET}")
+    args.open_browser = True
+    args.reload = False
+    return cmd_serve(args)
 
 
 # ======================================================================
@@ -394,11 +421,18 @@ def main(argv: Optional[List[str]] = None) -> int:
     p.add_argument("--depth", type=int, default=4, choices=[1, 2, 3, 4])
     p.set_defaults(func=cmd_privacy)
 
-    p = sub.add_parser("serve", help="run the dashboard and API")
+    p = sub.add_parser("serve", help="run the presentation, console, and API")
     p.add_argument("--host", default="127.0.0.1")
     p.add_argument("--port", type=int, default=8000)
     p.add_argument("--reload", action="store_true")
+    p.add_argument("--open", dest="open_browser", action="store_true",
+                   help="open the presentation in your browser")
     p.set_defaults(func=cmd_serve)
+
+    p = sub.add_parser("present", help="launch the guided presentation and open a browser")
+    p.add_argument("--host", default="127.0.0.1")
+    p.add_argument("--port", type=int, default=8000)
+    p.set_defaults(func=cmd_present)
 
     args = parser.parse_args(argv)
     return args.func(args)

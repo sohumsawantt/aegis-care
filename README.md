@@ -46,13 +46,41 @@ repaired system repaired**.
 ```bash
 pip install -r requirements.txt
 
+python -m aegis_care.cli present       # ← guided GUI demonstration, opens your browser
 python -m aegis_care.cli demo          # one incident end to end + recovery certificate
 python -m aegis_care.cli baselines     # all nine recovery conditions, side by side
 python -m aegis_care.cli privacy       # empirical leakage attacks on our own interface
 python -m aegis_care.cli experiment    # the full paired matrix -> results/
-python -m aegis_care.cli serve         # dashboard at http://127.0.0.1:8000
-pytest -q                              # 159 tests
+python -m aegis_care.cli serve         # presentation + console + API at :8000
+pytest -q                              # 185 tests
 ```
+
+## Presentation mode
+
+`python -m aegis_care.cli present` opens a guided, projector-sized walkthrough that runs
+the **real system** act by act — nothing is pre-recorded.
+
+| Act | What the audience sees |
+| --- | --- |
+| 1 · The System | Live sandbox figures; the coordinator's empty rights list |
+| 2 · Normal Operation | The task runs clean; the chain animates left to right |
+| 3 · The Poisoning | One corrupted alias propagates hop by hop; lineage edges go dark |
+| 4 · Why Deletion Fails | Baseline B: the seed is struck through and the task is **still wrong** |
+| 5 · Why Reset Is Worse | Baseline C: safety restored, BSR collapses to 0.000 |
+| 6 · The CARE Loop | Four stage cards light up C → A → R → E with live counts and signed verdicts |
+| 7 · Verification | The full capsule rendered as JSON, with the fields that *don't exist* struck through; certificate; resurrection probes |
+| 8 · All Nine Conditions | The comparison table, computed live on frozen state |
+| 9 · What Leaks | The four attacks, including the scoping ablation |
+
+**Controls:** <kbd>←</kbd> <kbd>→</kbd> navigate · <kbd>Space</kbd> runs the current act ·
+<kbd>N</kbd> toggles speaker notes. The **Scenario** button switches contamination family,
+task, depth, and provenance condition mid-talk; **Restart** gives you a clean run for the
+next audience.
+
+Speaker notes are built in — press <kbd>N</kbd> for per-act talking points, including which
+number to point at and why it matters.
+
+The analyst console (every control exposed at once) remains at **`/console`**.
 
 No GPU, no Docker, no network, and no model download are required: the default clinical
 model is a frozen deterministic composer, which also makes every counterfactual replay
@@ -243,7 +271,9 @@ counterfactual replay, and clean-room rebuild all execute inside the owning runt
 | [`incident/`](aegis_care/incident/) | Task manifest, four families, provenance masks |
 | [`eval/`](aegis_care/eval/) | Baselines, metrics, statistics, privacy attacks, report |
 | [`api/app.py`](aegis_care/api/app.py) | FastAPI service |
-| [`web/`](aegis_care/web/) | Reviewer dashboard |
+| [`api/demo.py`](aegis_care/api/demo.py) | Guided presentation session |
+| [`web/presentation.*`](aegis_care/web/) | Presentation GUI |
+| [`web/index.html`](aegis_care/web/index.html) | Analyst console |
 
 ---
 
@@ -262,9 +292,9 @@ retention meaningful rather than decorative.
 
 ---
 
-## Dashboard
+## Analyst console
 
-`python -m aegis_care.cli serve` opens a nine-tab reviewer console:
+`/console` (or `python -m aegis_care.cli serve`) opens a nine-tab reviewer console:
 
 - **Incident Lab** — construct an incident, watch contamination spread across the chain,
   apply a provenance mask
@@ -282,7 +312,7 @@ retention meaningful rather than decorative.
 
 ## Verification
 
-`pytest -q` runs 159 tests. Beyond ordinary unit coverage, each of the six **core invariants**
+`pytest -q` runs 185 tests. Beyond ordinary unit coverage, each of the six **core invariants**
 of proposal Section 7.1 and each termination/safety property of Section 6.6 has an
 executable check in [`tests/test_invariants.py`](tests/test_invariants.py):
 

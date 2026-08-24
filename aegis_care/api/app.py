@@ -33,6 +33,7 @@ from ..eval.runner import ExperimentRunner
 from ..incident.masks import ProvenanceMask
 from ..incident.scenarios import FAMILIES, FAMILY_INFO, Incident, ScenarioBuilder
 from ..memory.models import MemoryState
+from .demo import session as demo_session
 from ..policy.rbac import ROLE_FIELD_MATRIX, Role
 
 WEB_DIR = Path(__file__).resolve().parent.parent / "web"
@@ -584,18 +585,115 @@ def experiment_report() -> str:
 
 
 # ======================================================================
-# Dashboard
+# Guided presentation
+# ======================================================================
+class DemoConfigRequest(BaseModel):
+    family: str = Field("F1", description="F1 | F2 | F3 | F4")
+    task_id: Optional[str] = None
+    depth: int = Field(4, ge=1, le=4)
+    provenance: str = Field("targeted")
+
+
+class DemoCareRequest(BaseModel):
+    use_sketch: bool = True
+    use_explicit_lineage: bool = True
+    use_counterfactual: bool = True
+    use_recompilation: bool = True
+    use_enforcement: bool = True
+    use_scoping: bool = True
+
+
+@app.get("/api/demo/state")
+def demo_state() -> Dict[str, Any]:
+    return demo_session.state()
+
+
+@app.post("/api/demo/configure")
+def demo_configure(req: DemoConfigRequest) -> Dict[str, Any]:
+    if req.family not in FAMILIES:
+        raise HTTPException(400, f"unknown family {req.family}")
+    try:
+        return demo_session.configure(family=req.family, task_id=req.task_id,
+                                      depth=req.depth, provenance=req.provenance)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc))
+
+
+@app.post("/api/demo/system")
+def demo_system() -> Dict[str, Any]:
+    return demo_session.act_system()
+
+
+@app.post("/api/demo/clean")
+def demo_clean() -> Dict[str, Any]:
+    return demo_session.act_clean()
+
+
+@app.post("/api/demo/poison")
+def demo_poison() -> Dict[str, Any]:
+    try:
+        return demo_session.act_poison()
+    except ValueError as exc:
+        raise HTTPException(400, str(exc))
+
+
+@app.post("/api/demo/condition/{condition}")
+def demo_condition(condition: str) -> Dict[str, Any]:
+    if condition not in CONDITION_INFO:
+        raise HTTPException(400, f"unknown condition {condition}")
+    try:
+        return demo_session.act_condition(condition)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc))
+
+
+@app.post("/api/demo/care")
+def demo_care(req: DemoCareRequest) -> Dict[str, Any]:
+    try:
+        return demo_session.act_care(req.model_dump())
+    except ValueError as exc:
+        raise HTTPException(400, str(exc))
+
+
+@app.post("/api/demo/compare")
+def demo_compare() -> Dict[str, Any]:
+    try:
+        return demo_session.act_compare()
+    except ValueError as exc:
+        raise HTTPException(400, str(exc))
+
+
+@app.post("/api/demo/privacy")
+def demo_privacy() -> Dict[str, Any]:
+    try:
+        return demo_session.act_privacy()
+    except ValueError as exc:
+        raise HTTPException(400, str(exc))
+
+
+# ======================================================================
+# Interfaces
 # ======================================================================
 if WEB_DIR.exists():
     app.mount("/static", StaticFiles(directory=str(WEB_DIR)), name="static")
 
 
 @app.get("/", response_class=HTMLResponse)
-def dashboard() -> str:
+def presentation() -> str:
+    """The guided presentation view - what a live audience should see."""
+    page = WEB_DIR / "presentation.html"
+    if not page.exists():
+        return "<h1>AEGIS-Care</h1><p>Presentation assets not found.</p>"
+    return page.read_text(encoding="utf-8")
+
+
+@app.get("/console", response_class=HTMLResponse)
+def console() -> str:
+    """The analyst console - every control exposed at once."""
     index = WEB_DIR / "index.html"
     if not index.exists():
-        return "<h1>AEGIS-Care</h1><p>Dashboard assets not found.</p>"
+        return "<h1>AEGIS-Care</h1><p>Console assets not found.</p>"
     return index.read_text(encoding="utf-8")
 
 
-__all__ = ["app", "state"]
+__all__ = ["app", "state", "demo_session"]
