@@ -34,6 +34,7 @@ from ..incident.masks import ProvenanceMask
 from ..incident.scenarios import FAMILIES, FAMILY_INFO, Incident, ScenarioBuilder
 from ..memory.models import MemoryState
 from .demo import session as demo_session
+from .ops_routes import router as ops_router
 from ..policy.rbac import ROLE_FIELD_MATRIX, Role
 
 WEB_DIR = Path(__file__).resolve().parent.parent / "web"
@@ -672,28 +673,47 @@ def demo_privacy() -> Dict[str, Any]:
 
 
 # ======================================================================
+# Operations console
+# ======================================================================
+app.include_router(ops_router)
+
+
+# ======================================================================
 # Interfaces
 # ======================================================================
 if WEB_DIR.exists():
     app.mount("/static", StaticFiles(directory=str(WEB_DIR)), name="static")
 
 
-@app.get("/", response_class=HTMLResponse)
-def presentation() -> str:
-    """The guided presentation view - what a live audience should see."""
-    page = WEB_DIR / "presentation.html"
+def _page(name: str) -> str:
+    page = WEB_DIR / name
     if not page.exists():
-        return "<h1>AEGIS-Care</h1><p>Presentation assets not found.</p>"
+        return f"<h1>AEGIS-Care</h1><p>{name} not found.</p>"
     return page.read_text(encoding="utf-8")
 
 
+@app.get("/", response_class=HTMLResponse)
+def operations_console() -> str:
+    """The operations console - the product a clinical team signs in to."""
+    return _page("ops.html")
+
+
+@app.get("/present", response_class=HTMLResponse)
+def presentation() -> str:
+    """Guided walkthrough for demonstrating the method to an audience."""
+    return _page("presentation.html")
+
+
+@app.get("/research", response_class=HTMLResponse)
+def research_console() -> str:
+    """The analyst console - experiments, baselines, and ablations."""
+    return _page("index.html")
+
+
 @app.get("/console", response_class=HTMLResponse)
-def console() -> str:
-    """The analyst console - every control exposed at once."""
-    index = WEB_DIR / "index.html"
-    if not index.exists():
-        return "<h1>AEGIS-Care</h1><p>Console assets not found.</p>"
-    return index.read_text(encoding="utf-8")
+def console_alias() -> str:
+    """Kept so existing links to the analyst console still resolve."""
+    return _page("index.html")
 
 
 __all__ = ["app", "state", "demo_session"]

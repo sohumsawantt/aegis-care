@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AEGIS-Care Operations Console</title>
+  <link rel="stylesheet" href="/static/ops.css">
+</head>
+<body>
+
+<!-- ===================== SIGN IN ===================== -->
+<div id="signin">
+  <div class="signin-card">
+    <div class="signin-brand">
+      <h1>AEGIS<span>-CARE</span></h1>
+      <div class="tag">Memory safety operations for clinical AI assistants.
+        Find, repair, and verify what a wrong record association left behind.</div>
+      <ul>
+        <li>Report a suspected wrong-patient or wrong-record entry</li>
+        <li>Confirm the compromised memory and run guided recovery</li>
+        <li>Review anything the system would not rebuild on its own</li>
+        <li>Export a signed certificate for the incident record</li>
+      </ul>
+    </div>
+    <div class="signin-form">
+      <h2>Sign in</h2>
+      <div class="sub">Use your clinical systems account.</div>
+      <form id="signin-form">
+        <div class="field">
+          <label for="username">Username</label>
+          <input id="username" name="username" autocomplete="username" required>
+        </div>
+        <div class="field">
+          <label for="password">Password</label>
+          <input id="password" name="password" type="password"
+                 autocomplete="current-password" required>
+        </div>
+        <div id="signin-error"></div>
+        <button class="btn block" type="submit" id="signin-btn">Sign in</button>
+      </form>
+      <div class="accounts" id="accounts"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== APP ===================== -->
+<div id="shell">
+  <aside id="sidebar">
+    <div class="brand">
+      <b>AEGIS<span>-CARE</span></b>
+      <div class="env" id="env-badge">…</div>
+    </div>
+    <nav id="nav"></nav>
+    <div class="who">
+      <b id="who-name">—</b>
+      <span id="who-role">—</span>
+      <button id="signout">Sign out</button>
+    </div>
+  </aside>
+
+  <div id="main">
+    <div id="topbar">
+      <h1 id="page-title">Dashboard</h1>
+      <span class="crumb" id="page-crumb"></span>
+      <div class="grow"></div>
+      <div id="topbar-actions"></div>
+    </div>
+    <div id="content"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- ===================== DIALOGS ===================== -->
+<dialog id="dlg">
+  <div class="dh"><h3 id="dlg-title">—</h3><p id="dlg-sub"></p></div>
+  <div class="db" id="dlg-body"></div>
+  <div class="df" id="dlg-foot"></div>
+</dialog>
+
+<script src="/static/ops.js"></script>
+</body>
+</html>

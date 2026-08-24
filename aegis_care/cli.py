@@ -368,6 +368,31 @@ def cmd_serve(args) -> int:
     return 0
 
 
+def cmd_console(args) -> int:
+    """Launch the operations console for a clinical safety team."""
+    import os
+
+    if args.fhir_url:
+        os.environ["AEGIS_FHIR_URL"] = args.fhir_url
+    if args.fhir_token:
+        os.environ["AEGIS_FHIR_TOKEN"] = args.fhir_token
+    if args.db:
+        os.environ["AEGIS_OPS_DB"] = args.db
+
+    live = bool(os.environ.get("AEGIS_FHIR_URL"))
+    print()
+    rule("AEGIS-CARE OPERATIONS CONSOLE")
+    print(f"  Record source : {GREEN if live else YELLOW}"
+          f"{os.environ.get('AEGIS_FHIR_URL') if live else 'synthetic sandbox'}{RESET}")
+    print(f"  Incident store: {os.environ.get('AEGIS_OPS_DB', 'in-memory (not persisted)')}")
+    if not live:
+        print(f"  {DIM}Sign in with a sandbox account shown on the login screen.{RESET}")
+        print(f"  {DIM}Safety officer: a.khan / safety123{RESET}")
+    args.open_browser = True
+    args.reload = False
+    return cmd_serve(args)
+
+
 def cmd_present(args) -> int:
     """Launch straight into the guided presentation with the browser open."""
     print()
@@ -433,6 +458,16 @@ def main(argv: Optional[List[str]] = None) -> int:
     p.add_argument("--host", default="127.0.0.1")
     p.add_argument("--port", type=int, default=8000)
     p.set_defaults(func=cmd_present)
+
+    p = sub.add_parser("console", help="launch the clinical operations console")
+    p.add_argument("--host", default="127.0.0.1")
+    p.add_argument("--port", type=int, default=8000)
+    p.add_argument("--fhir-url", default=None,
+                   help="base URL of a real FHIR R4 server, e.g. https://hapi.fhir.org/baseR4")
+    p.add_argument("--fhir-token", default=None, help="bearer token for that server")
+    p.add_argument("--db", default=None,
+                   help="path to the incident database, e.g. ./aegis-ops.sqlite")
+    p.set_defaults(func=cmd_console)
 
     args = parser.parse_args(argv)
     return args.func(args)

@@ -46,14 +46,57 @@ repaired system repaired**.
 ```bash
 pip install -r requirements.txt
 
-python -m aegis_care.cli present       # ← guided GUI demonstration, opens your browser
+python -m aegis_care.cli console       # ← the operations console (the product)
+python -m aegis_care.cli present       # guided demonstration of the method
 python -m aegis_care.cli demo          # one incident end to end + recovery certificate
 python -m aegis_care.cli baselines     # all nine recovery conditions, side by side
 python -m aegis_care.cli privacy       # empirical leakage attacks on our own interface
 python -m aegis_care.cli experiment    # the full paired matrix -> results/
 python -m aegis_care.cli serve         # presentation + console + API at :8000
-pytest -q                              # 185 tests
+pytest -q                              # 229 tests
 ```
+
+## Three interfaces
+
+| Route | Interface | For |
+| --- | --- | --- |
+| `/` | **Operations console** | Clinical safety teams working real incidents |
+| `/present` | Guided demonstration | Explaining the method to an audience |
+| `/research` | Analyst console | Experiments, baselines, ablations |
+
+## Operations console
+
+The product. A clinical safety team signs in and works incidents end to end.
+
+```bash
+python -m aegis_care.cli console                       # synthetic sandbox
+python -m aegis_care.cli console --db ./aegis.sqlite   # persistent incidents
+python -m aegis_care.cli console --fhir-url https://hapi.fhir.org/baseR4
+```
+
+**The workflow**
+
+1. **A clinician reports what they saw** — "the handover lists another patient's vitals".
+   No technical vocabulary required; they pick from four plain-language issue types.
+2. **A safety officer triages** and identifies the compromised memory. The picker lists
+   memories that *name the reported patient but are filed under someone else* first —
+   because a wrong-patient memory is filed under the wrong patient, and a naive patient
+   filter would hide the very thing being looked for.
+3. **Recovery runs** only after a human confirms the seed. Never on suspicion.
+4. **A reviewer decides** on anything the system refused to rebuild rather than guess.
+5. **The incident closes** with a signed certificate and a downloadable evidence pack.
+
+**Roles and permissions** — five operator roles mapped to twelve permissions, enforced in
+the service layer rather than by hiding buttons: clinicians can report but never run
+recovery; reviewers decide on quarantined artifacts but cannot confirm seeds; auditors are
+strictly read-only.
+
+**Security** — PBKDF2-HMAC-SHA256 credentials (240 000 rounds, per-operator salt), 
+server-side sessions with expiry, and a durable audit trail covering every sign-in,
+triage, confirmation, recovery, review decision, and closure.
+
+See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for exactly what is production-shaped, what is
+still sandbox, and what a hospital must do before clinical use.
 
 ## Presentation mode
 
@@ -80,7 +123,7 @@ next audience.
 Speaker notes are built in — press <kbd>N</kbd> for per-act talking points, including which
 number to point at and why it matters.
 
-The analyst console (every control exposed at once) remains at **`/console`**.
+The analyst console (every control exposed at once) is at **`/research`**.
 
 No GPU, no Docker, no network, and no model download are required: the default clinical
 model is a frozen deterministic composer, which also makes every counterfactual replay
@@ -271,6 +314,13 @@ counterfactual replay, and clean-room rebuild all execute inside the owning runt
 | [`incident/`](aegis_care/incident/) | Task manifest, four families, provenance masks |
 | [`eval/`](aegis_care/eval/) | Baselines, metrics, statistics, privacy attacks, report |
 | [`api/app.py`](aegis_care/api/app.py) | FastAPI service |
+| [`ops/auth.py`](aegis_care/ops/auth.py) | Credentials, sessions, permission model |
+| [`ops/models.py`](aegis_care/ops/models.py) | Incident lifecycle and state machine |
+| [`ops/store.py`](aegis_care/ops/store.py) | Durable operators, sessions, incidents, audit |
+| [`ops/service.py`](aegis_care/ops/service.py) | Intake → triage → recovery → review → closure |
+| [`fhir/remote.py`](aegis_care/fhir/remote.py) | Read-only connector for a real FHIR R4 server |
+| [`api/ops_routes.py`](aegis_care/api/ops_routes.py) | Authenticated console API |
+| [`web/ops.*`](aegis_care/web/) | Operations console UI |
 | [`api/demo.py`](aegis_care/api/demo.py) | Guided presentation session |
 | [`web/presentation.*`](aegis_care/web/) | Presentation GUI |
 | [`web/index.html`](aegis_care/web/index.html) | Analyst console |
@@ -294,7 +344,7 @@ retention meaningful rather than decorative.
 
 ## Analyst console
 
-`/console` (or `python -m aegis_care.cli serve`) opens a nine-tab reviewer console:
+`/research` opens a nine-tab research console:
 
 - **Incident Lab** — construct an incident, watch contamination spread across the chain,
   apply a provenance mask
@@ -312,7 +362,7 @@ retention meaningful rather than decorative.
 
 ## Verification
 
-`pytest -q` runs 185 tests. Beyond ordinary unit coverage, each of the six **core invariants**
+`pytest -q` runs 229 tests. Beyond ordinary unit coverage, each of the six **core invariants**
 of proposal Section 7.1 and each termination/safety property of Section 6.6 has an
 executable check in [`tests/test_invariants.py`](tests/test_invariants.py):
 

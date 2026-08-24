@@ -21,16 +21,22 @@ def client():
 
 
 class TestPresentationShell:
-    def test_presentation_is_the_root_page(self, client):
-        response = client.get("/")
+    def test_presentation_is_served_at_present(self, client):
+        """The root route belongs to the operations console; the demonstration
+        lives at /present."""
+        response = client.get("/present")
         assert response.status_code == 200
         assert "Live Demonstration" in response.text
         assert "presentation.js" in response.text
 
+    def test_operations_console_owns_the_root_route(self, client):
+        assert "Operations Console" in client.get("/").text
+
     def test_analyst_console_still_available(self, client):
-        response = client.get("/console")
-        assert response.status_code == 200
-        assert "Incident Lab" in response.text
+        for path in ("/research", "/console"):
+            response = client.get(path)
+            assert response.status_code == 200
+            assert "Incident Lab" in response.text
 
     def test_presentation_assets_serve(self, client):
         for asset in ("presentation.js", "presentation.css"):
