@@ -63,9 +63,12 @@ CREATE INDEX IF NOT EXISTS idx_audit_subject ON ops_audit(subject);
 #: Seeded accounts so the console is usable immediately. A real deployment
 #: disables these and federates to the hospital identity provider.
 DEFAULT_OPERATORS = [
-    ("r.mehta", "Dr. Riya Mehta", OpsRole.CLINICIAN, "Internal Medicine", "clinician123"),
-    ("s.nair", "Sunita Nair, RN", OpsRole.CLINICIAN, "Ward 4B", "nurse123"),
+    # Ordered as they appear on the sign-in screen. The safety officer is first
+    # because they are the primary user of this tool and the only role that can
+    # drive an incident from report to closure.
     ("a.khan", "Arif Khan", OpsRole.SAFETY_OFFICER, "Clinical Informatics", "safety123"),
+    ("s.nair", "Sunita Nair, RN", OpsRole.CLINICIAN, "Ward 4B", "nurse123"),
+    ("r.mehta", "Dr. Riya Mehta", OpsRole.CLINICIAN, "Internal Medicine", "clinician123"),
     ("p.desai", "Priya Desai", OpsRole.REVIEWER, "Health Information Mgmt", "review123"),
     ("m.rao", "Meera Rao", OpsRole.AUDITOR, "Compliance", "audit123"),
     ("admin", "System Administrator", OpsRole.ADMIN, "IT", "admin123"),

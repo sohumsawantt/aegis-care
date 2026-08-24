@@ -591,7 +591,10 @@ class OpsService:
                 return 0
             written = 0
             for task in self.env.tasks[:n_tasks]:
-                self.env.run_trajectory(task, depth=task.get("depth", 3))
+                # Full depth, so every role holds memory. Running each task at
+                # its manifest depth would leave the clinical-summary vault
+                # empty and make the system look inert.
+                self.env.run_trajectory(task, depth=4)
                 self._used_tasks.add(task["task_id"])
                 written += 1
             return written

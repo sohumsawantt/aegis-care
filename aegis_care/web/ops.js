@@ -224,8 +224,7 @@ async function pageDashboard() {
   recent.innerHTML = `<header><h3>Open incidents</h3><div class="grow"></div></header>`;
   const body = el("div", "body tight");
   if (!d.recent.length) {
-    body.appendChild(el("div", "empty",
-      '<div class="big">✓</div><div>No open incidents.</div>'));
+    body.appendChild(emptyWorklistGuide());
   } else {
     body.appendChild(incidentTable(d.recent));
   }
@@ -248,6 +247,42 @@ async function pageDashboard() {
   mem.appendChild(mb);
   grid.appendChild(mem);
   c.appendChild(grid);
+}
+
+/** An empty queue is the normal state. Say what to do next rather than
+ *  showing a blank panel, which reads as a broken screen. */
+function emptyWorklistGuide() {
+  const wrap = el("div", "empty");
+  wrap.innerHTML = `<div class="big">✓</div>
+    <div style="font-size:15px;color:var(--text)"><b>No open incidents.</b></div>
+    <div style="margin-top:6px">Nothing has been reported against agent memory.</div>`;
+  const row = el("div", "row", "");
+  row.style.cssText = "justify-content:center;margin-top:18px";
+
+  if (can("report_incident")) {
+    const b = el("button", "btn sec", "Report an issue");
+    b.addEventListener("click", () => go("report"));
+    row.appendChild(b);
+  }
+  if (can("confirm_seed") && !A.meta.environment.live_fhir) {
+    const b = el("button", "btn", "Run a drill");
+    b.addEventListener("click", drillDialog);
+    row.appendChild(b);
+  }
+  wrap.appendChild(row);
+
+  if (!A.meta.environment.live_fhir) {
+    const hint = el("div", "small dim");
+    hint.style.cssText = "margin-top:16px;max-width:460px;margin-inline:auto;line-height:1.6";
+    hint.innerHTML = can("confirm_seed")
+      ? `This sandbox has no real contamination yet. <b>Run a drill</b> to plant a genuine
+         poisoning event — it uses the real agent write path and must be found by the real
+         recovery loop — then report it and work it through.`
+      : `This sandbox has no real contamination yet. A safety officer can plant a training
+         drill from their dashboard.`;
+    wrap.appendChild(hint);
+  }
+  return wrap;
 }
 
 /* ================================================================== */
@@ -293,8 +328,7 @@ async function pageWorklist() {
     <div class="grow"></div><span class="small dim">${d.incidents.length} shown</span></header>`;
   const body = el("div", "body tight");
   if (!d.incidents.length) {
-    body.appendChild(el("div", "empty",
-      '<div class="big">✓</div><div>Nothing here.</div>'));
+    body.appendChild(emptyWorklistGuide());
   } else {
     body.appendChild(incidentTable(d.incidents));
   }

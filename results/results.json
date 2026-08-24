@@ -103,7 +103,7 @@
       "oh_model_calls": 8,
       "oh_replays": 4,
       "oh_writes": 0,
-      "oh_wall_seconds": 0.0789,
+      "oh_wall_seconds": 0.0807,
       "oh_capsules": 15,
       "oh_capsule_bytes": 12032,
       "oh_rounds": 4,
@@ -135,7 +135,7 @@
       "oh_model_calls": 13,
       "oh_replays": 8,
       "oh_writes": 4,
-      "oh_wall_seconds": 0.0939,
+      "oh_wall_seconds": 0.0977,
       "oh_capsules": 15,
       "oh_capsule_bytes": 12032,
       "oh_rounds": 4,
@@ -167,7 +167,7 @@
       "oh_model_calls": 0,
       "oh_replays": 0,
       "oh_writes": 0,
-      "oh_wall_seconds": 0.1336,
+      "oh_wall_seconds": 0.1378,
       "oh_capsules": 30,
       "oh_capsule_bytes": 24066,
       "oh_rounds": 2,
@@ -255,7 +255,7 @@
       "oh_model_calls": 22,
       "oh_replays": 13,
       "oh_writes": 4,
-      "oh_wall_seconds": 0.1139,
+      "oh_wall_seconds": 0.119,
       "oh_capsules": 15,
       "oh_capsule_bytes": 12032,
       "oh_rounds": 2,
@@ -336,7 +336,7 @@
       "oh_model_calls": 8.0,
       "oh_fhir_reads": 12.0,
       "oh_capsule_bytes": 12032.0,
-      "oh_wall_seconds": 0.0789
+      "oh_wall_seconds": 0.0807
     },
     {
       "condition": "E",
@@ -353,7 +353,7 @@
       "oh_model_calls": 13.0,
       "oh_fhir_reads": 18.0,
       "oh_capsule_bytes": 12032.0,
-      "oh_wall_seconds": 0.0939
+      "oh_wall_seconds": 0.0977
     },
     {
       "condition": "F",
@@ -370,7 +370,7 @@
       "oh_model_calls": 0.0,
       "oh_fhir_reads": 0.0,
       "oh_capsule_bytes": 24066.0,
-      "oh_wall_seconds": 0.1336
+      "oh_wall_seconds": 0.1378
     },
     {
       "condition": "G",
@@ -421,7 +421,7 @@
       "oh_model_calls": 22.0,
       "oh_fhir_reads": 32.0,
       "oh_capsule_bytes": 12032.0,
-      "oh_wall_seconds": 0.1139
+      "oh_wall_seconds": 0.119
     }
   ],
   "by_condition_family": [
@@ -495,7 +495,7 @@
       "oh_model_calls": 8.0,
       "oh_fhir_reads": 12.0,
       "oh_capsule_bytes": 12032.0,
-      "oh_wall_seconds": 0.0789
+      "oh_wall_seconds": 0.0807
     },
     {
       "condition": "E",
@@ -513,7 +513,7 @@
       "oh_model_calls": 13.0,
       "oh_fhir_reads": 18.0,
       "oh_capsule_bytes": 12032.0,
-      "oh_wall_seconds": 0.0939
+      "oh_wall_seconds": 0.0977
     },
     {
       "condition": "F",
@@ -531,7 +531,7 @@
       "oh_model_calls": 0.0,
       "oh_fhir_reads": 0.0,
       "oh_capsule_bytes": 24066.0,
-      "oh_wall_seconds": 0.1336
+      "oh_wall_seconds": 0.1378
     },
     {
       "condition": "G",
@@ -585,7 +585,7 @@
       "oh_model_calls": 22.0,
       "oh_fhir_reads": 32.0,
       "oh_capsule_bytes": 12032.0,
-      "oh_wall_seconds": 0.1139
+      "oh_wall_seconds": 0.119
     }
   ],
   "by_condition_depth": [
@@ -659,7 +659,7 @@
       "oh_model_calls": 8.0,
       "oh_fhir_reads": 12.0,
       "oh_capsule_bytes": 12032.0,
-      "oh_wall_seconds": 0.0789
+      "oh_wall_seconds": 0.0807
     },
     {
       "condition": "E",
@@ -677,7 +677,7 @@
       "oh_model_calls": 13.0,
       "oh_fhir_reads": 18.0,
       "oh_capsule_bytes": 12032.0,
-      "oh_wall_seconds": 0.0939
+      "oh_wall_seconds": 0.0977
     },
     {
       "condition": "F",
@@ -695,7 +695,7 @@
       "oh_model_calls": 0.0,
       "oh_fhir_reads": 0.0,
       "oh_capsule_bytes": 24066.0,
-      "oh_wall_seconds": 0.1336
+      "oh_wall_seconds": 0.1378
     },
     {
       "condition": "G",
@@ -749,7 +749,7 @@
       "oh_model_calls": 22.0,
       "oh_fhir_reads": 32.0,
       "oh_capsule_bytes": 12032.0,
-      "oh_wall_seconds": 0.1139
+      "oh_wall_seconds": 0.119
     }
   ],
   "by_condition_provenance": [
@@ -823,7 +823,7 @@
       "oh_model_calls": 8.0,
       "oh_fhir_reads": 12.0,
       "oh_capsule_bytes": 12032.0,
-      "oh_wall_seconds": 0.0789
+      "oh_wall_seconds": 0.0807
     },
     {
       "condition": "E",
@@ -841,7 +841,7 @@
       "oh_model_calls": 13.0,
       "oh_fhir_reads": 18.0,
       "oh_capsule_bytes": 12032.0,
-      "oh_wall_seconds": 0.0939
+      "oh_wall_seconds": 0.0977
     },
     {
       "condition": "F",
@@ -859,7 +859,7 @@
       "oh_model_calls": 0.0,
       "oh_fhir_reads": 0.0,
       "oh_capsule_bytes": 24066.0,
-      "oh_wall_seconds": 0.1336
+      "oh_wall_seconds": 0.1378
     },
     {
       "condition": "G",
@@ -913,7 +913,7 @@
       "oh_model_calls": 22.0,
       "oh_fhir_reads": 32.0,
       "oh_capsule_bytes": 12032.0,
-      "oh_wall_seconds": 0.1139
+      "oh_wall_seconds": 0.119
     }
   ],
   "rq1_matched_loss": [],
@@ -941,7 +941,7 @@
     }
   ],
   "verification_failures": [],
-  "wall_seconds": 1.293,
+  "wall_seconds": 1.334,
   "config": {
     "seed": 20260729,
     "candidate": {
