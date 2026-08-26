@@ -630,6 +630,12 @@ class OpsService:
             self._used_tasks.add(task["task_id"])
             depth = max(4, FAMILY_INFO[family]["seed_depth"] + 1)
             incident = builder.build(family, task, depth=depth, n_controls=1)
+            # The matched clean control consumes a sibling task and writes its own
+            # memory. Without recording it, a later drill on that task would find
+            # the control's clean descendants already cached and silently fail to
+            # propagate.
+            for control in incident.controls:
+                self._used_tasks.add(control.task_id)
             # A drill that did not actually propagate would teach the wrong thing.
             if not incident.true_contaminated:
                 raise OpsError(
@@ -648,6 +654,73 @@ class OpsService:
                 "affected_count": len(incident.true_contaminated),
                 "observed_in": task["label"],
             }
+
+    def seed_demo_incidents(self) -> List[str]:
+        """Populate the console with a realistic mix of incidents.
+
+        A console that opens empty is technically correct and useless to look at.
+        This stages three incidents at different points in the workflow so the
+        dashboard, worklist, patient view, review queue, and audit trail all have
+        something real in them the moment someone signs in:
+
+          1. closed    - already recovered, carries a signed certificate
+          2. triaged   - assessed and assigned, waiting for seed confirmation
+          3. reported  - fresh, untouched, ready to be worked live
+
+        Every one is a genuine contamination that propagated through the real
+        derivation chain. Nothing here is mocked.
+        """
+        officer = self.store.get_operator("a.khan")
+        nurse = self.store.get_operator("s.nair")
+        if officer is None or nurse is None:
+            return []
+
+        plan = [
+            ("wrong_patient", "Handover lists another patient's vitals",
+             "Evening handover for bed 12 showed observations that do not match this "
+             "patient's chart. Ward staff noticed the heart rate and glucose were from "
+             "someone else.", "Ward 4B evening handover", "closed"),
+            ("restricted_disclosure", "Behavioural health score visible in care summary",
+             "A PHQ-9 score appeared in the shared care summary. Nursing staff on this "
+             "ward are not authorised to view behavioural health screening results.",
+             "Care summary, morning round", "triaged"),
+            ("stale_after_correction", "Assistant repeating a corrected sodium result",
+             "The sodium value was corrected in the chart yesterday, but the assistant "
+             "is still quoting the original figure in its summary.",
+             "Medication review", "reported"),
+        ]
+
+        created: List[str] = []
+        for issue_kind, title, description, observed_in, target in plan:
+            try:
+                drill = self.simulate_contamination(officer, issue_kind=issue_kind)
+            except OpsError:
+                continue   # this family could not propagate here; try the next
+
+            incident = self.report_incident(
+                nurse, title=title, issue_kind=issue_kind, description=description,
+                patient_id=drill["patient_id"], observed_in=observed_in)
+            created.append(incident.incident_id)
+
+            if target == "reported":
+                continue
+
+            self.triage(officer, incident.incident_id,
+                        severity=incident.severity.value, assign_to="a.khan",
+                        note="Reviewed the report and took ownership.")
+            if target == "triaged":
+                continue
+
+            self.confirm_seed(officer, incident.incident_id, [drill["seed_key"]],
+                              note="Traced the report to this memory version.")
+            self.run_recovery(officer, incident.incident_id)
+            current = self.store.get_incident(incident.incident_id)
+            if current and not current.quarantined_keys:
+                self.close_incident(
+                    officer, incident.incident_id,
+                    resolution="Affected memory rebuilt from the trusted record and "
+                               "verified. Follow-up task resolved the correct patient.")
+        return created
 
     # ==================================================================
     # Evidence

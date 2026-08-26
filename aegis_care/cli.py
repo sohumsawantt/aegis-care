@@ -378,6 +378,8 @@ def cmd_console(args) -> int:
         os.environ["AEGIS_FHIR_TOKEN"] = args.fhir_token
     if args.db:
         os.environ["AEGIS_OPS_DB"] = args.db
+    if args.empty:
+        os.environ["AEGIS_SEED_DEMO"] = "0"
 
     live = bool(os.environ.get("AEGIS_FHIR_URL"))
     print()
@@ -385,9 +387,12 @@ def cmd_console(args) -> int:
     print(f"  Record source : {GREEN if live else YELLOW}"
           f"{os.environ.get('AEGIS_FHIR_URL') if live else 'synthetic sandbox'}{RESET}")
     print(f"  Incident store: {os.environ.get('AEGIS_OPS_DB', 'in-memory (not persisted)')}")
+    print(f"  Sample incidents: "
+          f"{'no (--empty)' if args.empty else 'yes' if not live else 'no (live EHR)'}")
     if not live:
-        print(f"  {DIM}Sign in with a sandbox account shown on the login screen.{RESET}")
-        print(f"  {DIM}Safety officer: a.khan / safety123{RESET}")
+        print()
+        print(f"  {BOLD}Sign in as:{RESET} a.khan / safety123   (clinical safety officer)")
+        print(f"  {DIM}Other roles are listed on the sign-in screen.{RESET}")
     args.open_browser = True
     args.reload = False
     return cmd_serve(args)
@@ -467,6 +472,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     p.add_argument("--fhir-token", default=None, help="bearer token for that server")
     p.add_argument("--db", default=None,
                    help="path to the incident database, e.g. ./aegis-ops.sqlite")
+    p.add_argument("--empty", action="store_true",
+                   help="start with no sample incidents")
     p.set_defaults(func=cmd_console)
 
     args = parser.parse_args(argv)

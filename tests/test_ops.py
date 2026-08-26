@@ -377,3 +377,71 @@ class TestHTTPSurface:
     def test_other_interfaces_still_reachable(self, client):
         assert client.get("/present").status_code == 200
         assert client.get("/research").status_code == 200
+
+
+class TestDemoSeeding:
+    """The console must open with something in it, and everything in it must be
+    a genuine contamination that propagated through the real derivation chain."""
+
+    @pytest.fixture(scope="class")
+    def seeded(self):
+        service = OpsService()
+        service.bootstrap_workload()
+        service.seed_demo_incidents()
+        return service
+
+    def test_incidents_are_created(self, seeded):
+        assert len(seeded.store.list_incidents(open_only=False)) >= 3
+
+    def test_incidents_span_several_workflow_stages(self, seeded):
+        statuses = {i.status for i in seeded.store.list_incidents(open_only=False)}
+        assert IncidentStatus.CLOSED in statuses
+        assert len(statuses) >= 3, "a single-stage queue teaches nothing"
+
+    def test_at_least_one_incident_remains_open_to_work(self, seeded):
+        assert any(i.status.is_open
+                   for i in seeded.store.list_incidents(open_only=False))
+
+    def test_closed_incident_carries_a_signed_certificate(self, seeded):
+        closed = [i for i in seeded.store.list_incidents(open_only=False)
+                  if i.status == IncidentStatus.CLOSED]
+        assert closed
+        assert closed[0].certificate_text
+        assert closed[0].certificate["safe_resume"] is True
+
+    def test_every_seeded_incident_actually_propagated(self, seeded):
+        """Nothing here may be a cosmetic row: each names a real patient and a
+        contamination that reached the agents' memory."""
+        for incident in seeded.store.list_incidents(open_only=False):
+            assert incident.patient_id
+            assert incident.patient_display
+            assert incident.notes
+
+    def test_all_three_roles_hold_memory(self, seeded):
+        totals = {role.value: rt.vault.stats().get("total", 0)
+                  for role, rt in seeded.env.runtimes.items()}
+        assert all(v > 0 for v in totals.values()), totals
+
+    def test_every_family_can_propagate_back_to_back(self):
+        """A drill of each type must work even after earlier drills and a
+        recovery have run - control trajectories consume sibling tasks, which
+        previously made later drills fail silently."""
+        service = OpsService()
+        service.bootstrap_workload()
+        officer = service.operator_for_token(
+            service.sign_in("a.khan", "safety123")["token"])
+        for kind in ("wrong_patient", "wrong_record_content",
+                     "restricted_disclosure", "stale_after_correction"):
+            drill = service.simulate_contamination(officer, issue_kind=kind)
+            assert drill["affected_count"] > 0, f"{kind} did not propagate"
+
+    def test_seeding_is_skipped_when_incidents_already_exist(self, tmp_path):
+        db = tmp_path / "ops.sqlite"
+        first = OpsService(db_path=db)
+        first.bootstrap_workload()
+        first.seed_demo_incidents()
+        count = len(first.store.list_incidents(open_only=False))
+        first.store.close()
+
+        second = OpsService(db_path=db)
+        assert len(second.store.list_incidents(open_only=False)) == count

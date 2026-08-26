@@ -2,6 +2,13 @@
 building the FHIR sandbox and running trajectories dominates test time."""
 from __future__ import annotations
 
+import os
+
+# The operations console seeds sample incidents on startup so it opens with
+# something in it. Tests build their own fixtures and must stay fast and
+# deterministic, so opt out before the API module is imported.
+os.environ.setdefault("AEGIS_SEED_DEMO", "0")
+
 import warnings
 
 import pytest

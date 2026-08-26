@@ -48,6 +48,10 @@ def _build_service() -> OpsService:
     if not fhir_url:
         # Give the console realistic prior agent activity to operate on.
         service.bootstrap_workload()
+        # Stage a few incidents so the console opens with something in it.
+        # Never against a live EHR, never over an existing incident store.
+        if os.environ.get("AEGIS_SEED_DEMO", "1") != "0" and                 not service.store.list_incidents(open_only=False):
+            service.seed_demo_incidents()
     return service
 
 
