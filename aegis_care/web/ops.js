@@ -58,6 +58,8 @@ const sevPill = (s) => `<span class="pill sev-${esc(s)}">${esc(s)}</span>`;
 const statusPill = (s) => `<span class="st st-${esc(s)}">${esc(String(s).replace(/_/g, " "))}</span>`;
 const msChip = (s) => `<span class="ms ms-${esc(s)}">${esc(s)}</span>`;
 const can = (p) => Boolean(A.me?.permissions?.includes(p));
+const initials = (name) => String(name || "?").replace(/[^A-Za-z ]/g, "")
+  .split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("") || "?";
 
 /* ================================================================== */
 /* SIGN IN                                                             */
@@ -70,8 +72,11 @@ async function loadMeta() {
     <p>This instance runs on synthetic records. Pick a role to sign in.</p>`;
   A.meta.demo_accounts.forEach((acct) => {
     const b = el("button", "account-btn",
-      `<b>${esc(acct.display_name)}</b>
-       <span>${esc(acct.role.replace(/_/g, " "))}${acct.unit ? " · " + esc(acct.unit) : ""}</span>`);
+      `<span class="av">${esc(initials(acct.display_name))}</span>
+       <span style="min-width:0">
+         <b>${esc(acct.display_name)}</b>
+         <span>${esc(acct.role.replace(/_/g, " "))}${acct.unit ? " · " + esc(acct.unit) : ""}</span>
+       </span>`);
     b.type = "button";
     b.addEventListener("click", () => {
       $("username").value = acct.username;
@@ -119,18 +124,26 @@ $("signout").addEventListener("click", async () => {
 /* NAV                                                                 */
 /* ================================================================== */
 const PAGES = [
+  { sec: "Work" },
   { id: "dashboard", label: "Dashboard", ico: "◧", perm: "view_worklist" },
   { id: "worklist", label: "Incidents", ico: "☰", perm: "view_worklist", count: "open" },
-  { id: "report", label: "Report an issue", ico: "＋", perm: "report_incident" },
   { id: "review", label: "Review queue", ico: "⚖", perm: "review_quarantine", count: "review" },
+  { id: "report", label: "Report an issue", ico: "＋", perm: "report_incident" },
+  { sec: "Records" },
   { id: "patients", label: "Patient memory", ico: "◍", perm: "view_patient_memory" },
   { id: "audit", label: "Audit trail", ico: "▤", perm: "view_audit" },
+  { sec: "Account" },
+  { id: "access", label: "Your access", ico: "⚿", perm: null },
 ];
 
 function renderNav() {
   const nav = $("nav");
   nav.innerHTML = "";
-  PAGES.filter((p) => can(p.perm)).forEach((p) => {
+  let pending = null;
+  PAGES.forEach((p) => {
+    if (p.sec) { pending = p.sec; return; }
+    if (p.perm && !can(p.perm)) return;
+    if (pending) { nav.appendChild(el("div", "nav-sec", esc(pending))); pending = null; }
     const item = el("div", "navitem" + (A.page === p.id ? " active" : ""));
     const n = p.count === "open" ? A.counts.open : p.count === "review" ? A.counts.review : null;
     item.innerHTML = `<span class="ico">${p.ico}</span><span>${esc(p.label)}</span>` +
@@ -146,6 +159,7 @@ function go(page, params = {}) {
   const titles = {
     dashboard: "Dashboard", worklist: "Incidents", report: "Report an issue",
     review: "Review queue", patients: "Patient memory", audit: "Audit trail",
+    access: "Your access", spread: "Contamination spread",
     incident: params.id || "Incident", patient: params.id || "Patient",
   };
   $("page-title").textContent = titles[page] || page;
@@ -155,7 +169,8 @@ function go(page, params = {}) {
   const render = {
     dashboard: pageDashboard, worklist: pageWorklist, report: pageReport,
     review: pageReview, patients: pagePatients, audit: pageAudit,
-    incident: pageIncident, patient: pagePatient,
+    incident: pageIncident, patient: pagePatient, access: pageAccess,
+    spread: pageSpread,
   }[page];
   (render ? render(params) : Promise.resolve()).catch((e) => {
     $("content").innerHTML =
@@ -175,6 +190,7 @@ async function refreshCounts() {
 async function enterApp() {
   $("signin").style.display = "none";
   $("shell").classList.add("on");
+  $("who-av").textContent = initials(A.me.display_name);
   $("who-name").textContent = A.me.display_name;
   $("who-role").textContent = `${A.me.role_label}${A.me.unit ? " · " + A.me.unit : ""}`;
   const env = A.meta.environment;
@@ -254,8 +270,8 @@ async function pageDashboard() {
 function emptyWorklistGuide() {
   const wrap = el("div", "empty");
   wrap.innerHTML = `<div class="big">✓</div>
-    <div style="font-size:15px;color:var(--text)"><b>No open incidents.</b></div>
-    <div style="margin-top:6px">Nothing has been reported against agent memory.</div>`;
+    <div class="et">No open incidents</div>
+    <div class="es">Nothing has been reported against agent memory.</div>`;
   const row = el("div", "row", "");
   row.style.cssText = "justify-content:center;margin-top:18px";
 
@@ -510,6 +526,9 @@ async function pageIncident({ id }) {
 
   // ---- recovery outcome ---------------------------------------------
   if (inc.recovery_summary && Object.keys(inc.recovery_summary).length) {
+    const spreadBtn = el("button", "btn sec sm", "View contamination spread →");
+    spreadBtn.addEventListener("click", () => go("spread", { id: inc.incident_id }));
+    $("topbar-actions").prepend(spreadBtn);
     left.appendChild(recoveryCard(inc));
   }
 
@@ -745,7 +764,8 @@ async function confirmSeedDialog(inc) {
     const d = await api(`/api/ops/incidents/${inc.incident_id}/candidates`);
     list.innerHTML = "";
     if (!d.candidates.length) {
-      list.appendChild(el("div", "empty", "<div>No memory in service for this patient.</div>"));
+      list.appendChild(el("div", "empty",
+        '<div class="big">◍</div><div class="et">No memory in service</div>'));
       return;
     }
     d.candidates.forEach((cand) => {

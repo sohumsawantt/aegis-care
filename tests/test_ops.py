@@ -445,3 +445,133 @@ class TestDemoSeeding:
 
         second = OpsService(db_path=db)
         assert len(second.store.list_incidents(open_only=False)) == count
+
+
+class TestSpreadTree:
+    """The spread view is how a clinician understands blast radius, so it must
+    be accurate about what was reached and how it was found."""
+
+    @pytest.fixture(scope="class")
+    def spread(self):
+        service = OpsService()
+        service.bootstrap_workload()
+        officer = service.operator_for_token(
+            service.sign_in("a.khan", "safety123")["token"])
+        nurse = service.operator_for_token(
+            service.sign_in("s.nair", "nurse123")["token"])
+        drill = service.simulate_contamination(officer, issue_kind="wrong_patient")
+        incident = service.report_incident(
+            nurse, title="Wrong patient", issue_kind="wrong_patient",
+            description="x", patient_id=drill["patient_id"])
+        service.confirm_seed(officer, incident.incident_id, [drill["seed_key"]])
+        service.run_recovery(officer, incident.incident_id)
+        return service, officer, incident, drill
+
+    def test_empty_before_recovery(self):
+        service = OpsService()
+        service.bootstrap_workload()
+        officer = service.operator_for_token(
+            service.sign_in("a.khan", "safety123")["token"])
+        nurse = service.operator_for_token(
+            service.sign_in("s.nair", "nurse123")["token"])
+        incident = service.report_incident(
+            nurse, title="x", issue_kind="wrong_patient", description="y")
+        tree = service.spread_tree(officer, incident.incident_id)
+        assert tree["nodes"] == []
+        assert tree["recovered"] is False
+
+    def test_covers_every_affected_memory(self, spread):
+        service, officer, incident, drill = spread
+        tree = service.spread_tree(officer, incident.incident_id)
+        # the origin plus each descendant the drill created
+        assert tree["stats"]["affected"] == drill["affected_count"] + 1
+
+    def test_origin_is_marked_and_unique(self, spread):
+        service, officer, incident, _ = spread
+        tree = service.spread_tree(officer, incident.incident_id)
+        seeds = [n for n in tree["nodes"] if n["is_seed"]]
+        assert len(seeds) == 1
+        assert seeds[0]["depth"] == 0
+        assert seeds[0]["discovery"] == "seed"
+
+    def test_tree_is_connected(self, spread):
+        service, officer, incident, _ = spread
+        tree = service.spread_tree(officer, incident.incident_id)
+        keys = {n["key"] for n in tree["nodes"]}
+        seed = next(n["key"] for n in tree["nodes"] if n["is_seed"])
+        reachable, frontier = {seed}, [seed]
+        while frontier:
+            current = frontier.pop()
+            for edge in tree["edges"]:
+                if edge["from"] == current and edge["to"] not in reachable:
+                    reachable.add(edge["to"])
+                    frontier.append(edge["to"])
+        assert reachable == keys, "some affected memory is not reachable from the origin"
+
+    def test_records_how_each_hop_was_discovered(self, spread):
+        service, officer, incident, _ = spread
+        tree = service.spread_tree(officer, incident.incident_id)
+        for node in tree["nodes"]:
+            assert node["discovery"] in ("seed", "lineage", "latent_sketch")
+
+    def test_crosses_role_boundaries(self, spread):
+        service, officer, incident, _ = spread
+        tree = service.spread_tree(officer, incident.incident_id)
+        assert tree["stats"]["roles"] == 3, "the drill should reach all three roles"
+
+    def test_every_hop_named_the_wrong_patient(self, spread):
+        service, officer, incident, _ = spread
+        tree = service.spread_tree(officer, incident.incident_id)
+        assert all(n["wrong_patient"] for n in tree["nodes"])
+
+    def test_repairs_name_the_intended_patient(self, spread):
+        service, officer, incident, _ = spread
+        tree = service.spread_tree(officer, incident.incident_id)
+        repaired = [n for n in tree["nodes"] if n["outcome"] == "repaired"]
+        assert repaired
+        for node in repaired:
+            assert node["repaired_patient"] == incident.patient_id
+
+    def test_reports_untouched_clean_memory(self, spread):
+        service, officer, incident, _ = spread
+        tree = service.spread_tree(officer, incident.incident_id)
+        assert tree["stats"]["cleared"] > 0
+
+    def test_clinician_may_see_the_spread_of_their_own_report(self, spread):
+        service, _, incident, _ = spread
+        nurse = service.operator_for_token(
+            service.sign_in("s.nair", "nurse123")["token"])
+        assert service.spread_tree(nurse, incident.incident_id)["nodes"]
+
+    def test_auditor_may_see_the_spread(self, spread):
+        service, _, incident, _ = spread
+        auditor = service.operator_for_token(
+            service.sign_in("m.rao", "audit123")["token"])
+        assert service.spread_tree(auditor, incident.incident_id)["nodes"]
+
+
+class TestAccessSurface:
+    @pytest.fixture
+    def client(self):
+        ops_routes.service = OpsService()
+        ops_routes.service.bootstrap_workload()
+        return TestClient(app)
+
+    def test_meta_exposes_the_full_permission_matrix(self, client):
+        meta = client.get("/api/ops/meta").json()
+        matrix = meta["role_permissions"]
+        assert set(matrix) == {r.value for r in OpsRole}
+        assert "run_recovery" in matrix["safety_officer"]
+        assert "run_recovery" not in matrix["clinician"]
+        assert "review_quarantine" in matrix["reviewer"]
+        assert "confirm_seed" not in matrix["reviewer"]
+        assert matrix["auditor"] == sorted(
+            ["export_evidence", "view_audit", "view_incident", "view_worklist"])
+
+    def test_spread_route_requires_a_session(self, client):
+        assert client.get("/api/ops/incidents/AC-1/spread").status_code == 401
+
+    def test_views_asset_is_served(self, client):
+        response = client.get("/static/ops-views.js")
+        assert response.status_code == 200
+        assert "pageSpread" in response.text

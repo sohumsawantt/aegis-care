@@ -12,15 +12,19 @@
 <div id="signin">
   <div class="signin-card">
     <div class="signin-brand">
+      <div class="logo">⬡</div>
       <h1>AEGIS<span>-CARE</span></h1>
-      <div class="tag">Memory safety operations for clinical AI assistants.
-        Find, repair, and verify what a wrong record association left behind.</div>
+      <div class="tag">Memory safety operations for clinical AI assistants.</div>
       <ul>
         <li>Report a suspected wrong-patient or wrong-record entry</li>
-        <li>Confirm the compromised memory and run guided recovery</li>
-        <li>Review anything the system would not rebuild on its own</li>
-        <li>Export a signed certificate for the incident record</li>
+        <li>Trace exactly how far it spread across the care team</li>
+        <li>Rebuild affected memory from the trusted record</li>
+        <li>Close with a signed certificate and an evidence pack</li>
       </ul>
+      <div class="foot">
+        Simulated environment with synthetic records. Not for clinical use, and
+        not a substitute for your incident reporting system.
+      </div>
     </div>
     <div class="signin-form">
       <h2>Sign in</h2>
@@ -28,7 +32,8 @@
       <form id="signin-form">
         <div class="field">
           <label for="username">Username</label>
-          <input id="username" name="username" autocomplete="username" required>
+          <input id="username" name="username" autocomplete="username" required
+                 autocapitalize="off" spellcheck="false">
         </div>
         <div class="field">
           <label for="password">Password</label>
@@ -36,7 +41,7 @@
                  autocomplete="current-password" required>
         </div>
         <div id="signin-error"></div>
-        <button class="btn block" type="submit" id="signin-btn">Sign in</button>
+        <button class="btn block lg" type="submit" id="signin-btn">Sign in</button>
       </form>
       <div class="accounts" id="accounts"></div>
     </div>
@@ -47,14 +52,20 @@
 <div id="shell">
   <aside id="sidebar">
     <div class="brand">
-      <b>AEGIS<span>-CARE</span></b>
-      <div class="env" id="env-badge">…</div>
+      <div class="logo">⬡</div>
+      <div>
+        <b>AEGIS<span>-CARE</span></b>
+        <div class="env" id="env-badge">…</div>
+      </div>
     </div>
     <nav id="nav"></nav>
     <div class="who">
-      <b id="who-name">—</b>
-      <span id="who-role">—</span>
-      <button id="signout">Sign out</button>
+      <div class="av" id="who-av">–</div>
+      <div class="meta">
+        <b id="who-name">—</b>
+        <span id="who-role">—</span>
+      </div>
+      <button id="signout" title="Sign out">⏻</button>
     </div>
   </aside>
 
@@ -71,7 +82,6 @@
 
 <div id="toast"></div>
 
-<!-- ===================== DIALOGS ===================== -->
 <dialog id="dlg">
   <div class="dh"><h3 id="dlg-title">—</h3><p id="dlg-sub"></p></div>
   <div class="db" id="dlg-body"></div>
@@ -79,5 +89,6 @@
 </dialog>
 
 <script src="/static/ops.js"></script>
+<script src="/static/ops-views.js"></script>
 </body>
 </html>

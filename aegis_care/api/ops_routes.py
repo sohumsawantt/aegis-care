@@ -15,7 +15,14 @@ from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from ..environment import AegisEnvironment
-from ..ops.auth import ROLE_INFO, AuthError, Operator, OpsRole, Permission
+from ..ops.auth import (
+    ROLE_INFO,
+    ROLE_PERMISSIONS,
+    AuthError,
+    Operator,
+    OpsRole,
+    Permission,
+)
 from ..ops.models import ISSUE_KIND_INFO, IncidentStatus, IssueKind, Severity
 from ..ops.service import OpsError, OpsService
 from ..ops.store import DEFAULT_OPERATORS
@@ -178,6 +185,10 @@ def meta() -> Dict[str, Any]:
              "default_severity": v["default_severity"].value}
             for k, v in ISSUE_KIND_INFO.items()
         ],
+        "role_permissions": {
+            r.value: sorted(p.value for p in ROLE_PERMISSIONS.get(r, frozenset()))
+            for r in OpsRole
+        },
         "severities": [s.value for s in Severity],
         "statuses": [s.value for s in IncidentStatus],
         "environment": {
@@ -266,6 +277,12 @@ def close_incident(incident_id: str, req: CloseRequest,
                    operator: Operator = Depends(current_operator)) -> Dict[str, Any]:
     return _handle(service.close_incident, operator, incident_id,
                    resolution=req.resolution, dismiss=req.dismiss).to_detail()
+
+
+@router.get("/incidents/{incident_id}/spread")
+def spread(incident_id: str,
+           operator: Operator = Depends(current_operator)) -> Dict[str, Any]:
+    return _handle(service.spread_tree, operator, incident_id)
 
 
 @router.get("/incidents/{incident_id}/evidence")

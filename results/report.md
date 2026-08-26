@@ -2,7 +2,7 @@
 
 _Privacy-bounded memory recompilation for recovering poisoned clinical AI agents._
 
-Wall time: 1.49s · 1 incidents · 9 condition runs
+Wall time: 1.225s · 1 incidents · 9 condition runs
 
 
 ## Recovery conditions

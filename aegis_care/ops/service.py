@@ -339,6 +339,12 @@ class OpsService:
                 "overhead": result.overhead,
                 "repaired_detail": result.repaired,
                 "quarantined_detail": result.quarantined,
+                # How each descendant was found. This is what the spread view
+                # needs to distinguish an edge that was recorded from one that
+                # had to be inferred.
+                "candidates_detail": result.candidates_considered,
+                "confirmed_keys": list(result.confirmed),
+                "cleared_keys": list(result.cleared),
             }
             incident.quarantined_keys = [q["memory_key"] for q in result.quarantined]
             if certificate is not None:
@@ -470,6 +476,150 @@ class OpsService:
                              "dismiss_incident" if dismiss else "close_incident",
                              incident_id, {"resolution": resolution})
         return incident
+
+    # ==================================================================
+    # Contamination spread
+    # ==================================================================
+    def spread_tree(self, operator: Operator, incident_id: str) -> Dict[str, Any]:
+        """How the wrong record travelled, and what happened to each hop.
+
+        Before recovery this is a single node: one confirmed compromised memory,
+        and no knowledge of what inherited from it. After recovery it is the full
+        tree the CARE loop discovered, with each edge labelled by how it was
+        found - a recorded lineage edge, or one that had to be inferred because
+        the provenance was missing. That contrast is the whole point of the
+        system, so the view is built to show it.
+        """
+        self.require(operator, Permission.VIEW_INCIDENT)
+        incident = self.get_incident(operator, incident_id)
+
+        summary = incident.recovery_summary or {}
+        affected_keys = list(dict.fromkeys(
+            list(incident.seed_keys) + list(summary.get("confirmed_keys", []))))
+
+        # How each candidate was discovered, and what the local replay concluded.
+        discovery = {c["memory_key"]: ("lineage" if c.get("explicit") else "latent_sketch")
+                     for c in summary.get("candidates_detail", [])}
+        verdicts = {v["memory_key"]: v
+                    for v in self.env.ledger.verdicts(incident_id)}
+        repaired_by = {r["memory_key"]: r.get("new_key")
+                       for r in summary.get("repaired_detail", [])}
+        quarantined = {q["memory_key"]: q.get("reason", "")
+                       for q in summary.get("quarantined_detail", [])}
+
+        # Index affected artifacts by commitment so parent links can be resolved.
+        artifacts: Dict[str, Any] = {}
+        by_commitment: Dict[str, str] = {}
+        for key in affected_keys:
+            artifact = self.env.find_artifact(key)
+            if artifact is None:
+                continue
+            artifacts[key] = artifact
+            by_commitment[artifact.commitment()] = key
+
+        # --- edges ------------------------------------------------------
+        edges: List[Dict[str, Any]] = []
+        parent_of: Dict[str, Optional[str]] = {}
+        for key, artifact in artifacts.items():
+            parent = None
+            for commitment in artifact.explicit_parent_commitments:
+                if commitment in by_commitment and by_commitment[commitment] != key:
+                    parent = by_commitment[commitment]
+                    break
+            parent_of[key] = parent
+            if parent:
+                edges.append({"from": parent, "to": key, "kind": "lineage"})
+
+        # Anything affected with no recorded parent was reached some other way.
+        # Attach it to the nearest earlier stage so the tree stays connected,
+        # and mark the edge as inferred.
+        stage_rank = {
+            "identity_hint": 0, "lookup_strategy": 1, "handover": 2,
+            "observation_summary": 2, "clinical_summary": 3, "aggregate": 4,
+        }
+        ordered = sorted(
+            artifacts.items(),
+            key=lambda kv: (stage_rank.get(kv[1].artifact_type.value, 9),
+                            kv[1].created_at))
+        for index, (key, artifact) in enumerate(ordered):
+            if parent_of.get(key) or key in incident.seed_keys:
+                continue
+            rank = stage_rank.get(artifact.artifact_type.value, 9)
+            candidate = None
+            for prev_key, prev in reversed(ordered[:index]):
+                if stage_rank.get(prev.artifact_type.value, 9) < rank:
+                    candidate = prev_key
+                    break
+            if candidate is None and incident.seed_keys:
+                candidate = incident.seed_keys[0]
+            if candidate and candidate != key:
+                parent_of[key] = candidate
+                edges.append({"from": candidate, "to": key, "kind": "inferred"})
+
+        # --- depth ------------------------------------------------------
+        def depth_of(key: str, guard: int = 0) -> int:
+            parent = parent_of.get(key)
+            if not parent or guard > 12:
+                return 0
+            return depth_of(parent, guard + 1) + 1
+
+        intended = incident.patient_id
+        nodes: List[Dict[str, Any]] = []
+        for key, artifact in ordered:
+            verdict = verdicts.get(key, {})
+            resolved = artifact.structured_facts.get("patient_id")
+            new_key = repaired_by.get(key)
+            repaired = self.env.find_artifact(new_key) if new_key else None
+            nodes.append({
+                "key": key,
+                "role": artifact.owner.value,
+                "artifact_type": artifact.artifact_type.value,
+                "depth": depth_of(key),
+                "is_seed": key in incident.seed_keys,
+                "discovery": "seed" if key in incident.seed_keys
+                             else discovery.get(key, "lineage"),
+                "state": artifact.state.value,
+                "patient_id": resolved,
+                "patient_display": (self.env.fhir.patient_display(resolved)
+                                    if resolved else ""),
+                "wrong_patient": bool(resolved and intended and resolved != intended),
+                "restricted": bool(
+                    artifact.structured_facts.get("laundered_restricted")),
+                "influence_band": verdict.get("influence_band"),
+                "influence_score": verdict.get("influence_score"),
+                "outcome": ("repaired" if new_key else
+                            "quarantined" if key in quarantined else
+                            "withdrawn" if not artifact.is_servable() else "active"),
+                "repaired_key": new_key,
+                "repaired_patient": (repaired.structured_facts.get("patient_id")
+                                     if repaired else None),
+                "quarantine_reason": quarantined.get(key, ""),
+                "created_at": artifact.created_at,
+                "preview": artifact.content[:200],
+            })
+
+        cleared = summary.get("cleared_keys", [])
+        return {
+            "incident_id": incident.incident_id,
+            "recovered": bool(summary),
+            "intended_patient": {
+                "id": intended,
+                "display": incident.patient_display,
+            },
+            "nodes": nodes,
+            "edges": edges,
+            "stats": {
+                "affected": len(nodes),
+                "hops": max([n["depth"] for n in nodes], default=0),
+                "roles": len({n["role"] for n in nodes}),
+                "repaired": len(repaired_by),
+                "quarantined": len(quarantined),
+                "cleared": len(cleared),
+                "inferred_edges": sum(1 for e in edges if e["kind"] == "inferred"),
+                "sketch_discovered": sum(
+                    1 for n in nodes if n["discovery"] == "latent_sketch"),
+            },
+        }
 
     # ==================================================================
     # Patient-centred view
